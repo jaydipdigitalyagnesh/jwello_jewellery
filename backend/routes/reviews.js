@@ -1,9 +1,10 @@
-const express = require('express');
+import express from 'express';
+import auth from '../middleware/auth.js';
+import adminAuth from '../middleware/adminAuth.js';
+import Review from '../models/Review.js';
+import Product from '../models/Product.js';
+
 const router = express.Router();
-const auth = require('../middleware/auth');
-const adminAuth = require('../middleware/adminAuth');
-const Review = require('../models/Review');
-const Product = require('../models/Product');
 
 router.get('/:productId', async (req, res) => {
   const reviews = await Review.find({ product: req.params.productId }).populate('user', 'name').sort({ createdAt: -1 });
@@ -25,4 +26,4 @@ router.delete('/:id', auth, async (req, res) => {
   await review.deleteOne();
   res.json({ success: true, message: 'Review deleted' });
 });
-module.exports = router;
+export default router;

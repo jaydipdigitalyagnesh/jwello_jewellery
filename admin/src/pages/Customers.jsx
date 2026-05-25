@@ -5,15 +5,15 @@ function Customers() {
     const [customers, setCustomers] = useState([])
     const [editCustomer, setEditCustomer] = useState(null)
 
-    useEffect(() => {
-        fetchCustomers()
-    }, [])
-
     const fetchCustomers = () => {
         fetch(`${import.meta.env.VITE_BACKEND_URL}/customers`)
             .then(res => res.json())
             .then(data => setCustomers(data.customers))
     }
+
+    useEffect(() => {
+        fetchCustomers()
+    }, [])
 
     const deleteCustomer = async (id) => {
         await fetch(`${import.meta.env.VITE_BACKEND_URL}/customers/${id}`, {

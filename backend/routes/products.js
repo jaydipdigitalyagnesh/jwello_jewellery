@@ -1,11 +1,11 @@
-// routes/products.js
-const express = require('express');
+import express from 'express';
+import Product from '../models/Product.js';
+import auth from '../middleware/auth.js';
+import adminAuth from '../middleware/adminAuth.js';
+import multer from 'multer';
+import path from 'path';
+
 const router = express.Router();
-const Product = require('../models/Product');
-const auth = require('../middleware/auth');
-const adminAuth = require('../middleware/adminAuth');
-const multer = require('multer');
-const path = require('path');
 
 // Storage config
 const storage = multer.diskStorage({
@@ -81,4 +81,4 @@ router.delete('/:id', async (req, res) => {
   res.json({ success: true, message: 'Product deactivated' });
 });
 
-module.exports = router;
+export default router;

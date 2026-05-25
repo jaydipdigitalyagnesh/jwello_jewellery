@@ -1,6 +1,11 @@
-module.exports = {
-  User: require('./User'),
-  Product: require('./Product'),
-  Order: require('./Order'),
-  Review: require('./Review'),
+import User from './User.js';
+import Product from './Product.js';
+import Order from './Order.js';
+import Review from './Review.js';
+
+export default {
+  User,
+  Product,
+  Order,
+  Review,
 };

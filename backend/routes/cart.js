@@ -1,9 +1,9 @@
-// routes/cart.js
-const express = require('express');
+import express from 'express';
+import auth from '../middleware/auth.js';
+import User from '../models/User.js';
+import Product from '../models/Product.js';
+
 const router = express.Router();
-const auth = require('../middleware/auth');
-const User = require('../models/User');
-const Product = require('../models/Product');
 
 // GET cart
 router.get('/', auth, async (req, res) => {
@@ -41,7 +41,7 @@ router.delete('/clear', auth, async (req, res) => {
   res.json({ success: true, message: 'Cart cleared' });
 });
 
-module.exports = router;
+export default router;
 
 // ─────────────────────────────────
 // routes/wishlist.js (stub)

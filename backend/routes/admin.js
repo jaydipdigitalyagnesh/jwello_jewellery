@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import adminAuth from '../middleware/adminAuth.js';
+
 const router = express.Router();
-const adminAuth = require('../middleware/adminAuth');
 
 router.get('/stats', adminAuth, async (req, res) => {
   res.json({ success: true, stats: {
@@ -20,4 +21,4 @@ router.get('/top-products', adminAuth, async (req, res) => {
     { name:'Antique Gold Necklace', sales:98, revenue:5096000 },
   ]});
 });
-module.exports = router;
+export default router;

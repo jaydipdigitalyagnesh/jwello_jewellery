@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import auth from '../middleware/auth.js';
+import adminAuth from '../middleware/adminAuth.js';
+import User from '../models/User.js';
+
 const router = express.Router();
-const auth = require('../middleware/auth');
-const adminAuth = require('../middleware/adminAuth');
-const User = require('../models/User');
 
 router.get('/profile', auth, async (req, res) => {
   const user = await User.findById(req.user.id).select('-password');
@@ -24,4 +25,4 @@ router.get('/', adminAuth, async (req, res) => {
   ]);
   res.json({ success: true, users, total });
 });
-module.exports = router;
+export default router;

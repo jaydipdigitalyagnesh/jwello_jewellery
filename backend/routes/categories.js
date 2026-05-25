@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import adminAuth from '../middleware/adminAuth.js';
+
 const router = express.Router();
-const adminAuth = require('../middleware/adminAuth');
 
 const cats = [
   { slug:'rings', name:'Rings', icon:'💍', count:240 },
@@ -11,4 +12,4 @@ const cats = [
   { slug:'pendants', name:'Pendants', icon:'🏅', count:110 },
 ];
 router.get('/', (req, res) => res.json({ success: true, categories: cats }));
-module.exports = router;
+export default router;

@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import adminAuth from '../middleware/adminAuth.js';
+
 const router = express.Router();
-const adminAuth = require('../middleware/adminAuth');
 
 const coupons = [
   { code: 'Jwello10', type: 'percentage', value: 10, minOrder: 999, active: true },
@@ -13,4 +14,4 @@ router.get('/validate/:code', (req, res) => {
   res.json({ success: true, coupon: { code: coupon.code, type: coupon.type, value: coupon.value, minOrder: coupon.minOrder } });
 });
 router.get('/', adminAuth, (req, res) => res.json({ success: true, coupons }));
-module.exports = router;
+export default router;

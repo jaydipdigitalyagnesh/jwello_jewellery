@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import auth from '../middleware/auth.js';
+import User from '../models/User.js';
+
 const router = express.Router();
-const auth = require('../middleware/auth');
-const User = require('../models/User');
 
 router.get('/', auth, async (req, res) => {
   const user = await User.findById(req.user.id).populate('wishlist', 'name price images category metal');
@@ -15,4 +16,4 @@ router.delete('/remove/:productId', auth, async (req, res) => {
   await User.findByIdAndUpdate(req.user.id, { $pull: { wishlist: req.params.productId } });
   res.json({ success: true, message: 'Removed from wishlist' });
 });
-module.exports = router;
+export default router;

@@ -1,9 +1,10 @@
-// routes/auth.js
-const express = require('express');
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+import auth from '../middleware/auth.js';
+
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -41,9 +42,9 @@ router.post('/login', async (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', require('../middleware/auth'), async (req, res) => {
+router.get('/me', auth, async (req, res) => {
   const user = await User.findById(req.user.id).select('-password');
   res.json({ success: true, user });
 });
 
-module.exports = router;
+export default router;

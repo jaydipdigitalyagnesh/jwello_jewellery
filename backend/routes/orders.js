@@ -1,10 +1,10 @@
-// routes/orders.js
-const express = require('express');
+import express from 'express';
+import Order from '../models/Order.js';
+import Product from '../models/Product.js';
+import auth from '../middleware/auth.js';
+import adminAuth from '../middleware/adminAuth.js';
+
 const router = express.Router();
-const Order = require('../models/Order');
-const Product = require('../models/Product');
-const auth = require('../middleware/auth');
-const adminAuth = require('../middleware/adminAuth');
 
 // POST /api/orders — Create order (logged in user)
 router.post('/', auth, async (req, res) => {
@@ -88,4 +88,4 @@ router.put('/:id/status', adminAuth, async (req, res) => {
   res.json({ success: true, order });
 });
 
-module.exports = router;
+export default router;

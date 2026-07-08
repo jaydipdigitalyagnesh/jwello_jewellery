@@ -1,4 +1,3 @@
-import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import Razorpay from "razorpay";
@@ -9,12 +8,15 @@ import Product from "./models/Product.js"
 import Coupon from "./models/Coupon.js";
 import ProductReview from "./models/ProductReview.js";
 import UserReview from "./models/UserReview.js";
+import jwt from "jsonwebtoken";
+import express from "express";
+import bcrypt from "bcryptjs";
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT
-
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: "*"
+}));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 const server = http.createServer(app);
@@ -144,11 +146,13 @@ app.post("/register", async (req, res) => {
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = new User({
       name,
       email,
       phone,
-      password,
+      password: hashedPassword,
       role: "user"
     });
 
@@ -169,39 +173,90 @@ app.post("/register", async (req, res) => {
   }
 });
 /* User Login */
+
 app.post("/login", async (req, res) => {
-  const user = await User.findOne({
-    email: req.body.email,
-    password: req.body.password
-  });
 
-  if (user) {
+  try {
 
-    if (user.role !== "user") {
+    const { email, password } = req.body;
 
+    const user = await User.findOne({ email });
+
+    if (!user) {
       return res.json({
         success: false,
-        message: "Only user can login"
+        message: "Invalid credentials"
       });
+    }
+
+    let isMatch = false;
+
+    // User already has hashed password
+    if (user.password.startsWith("$2")) {
+
+      isMatch = await bcrypt.compare(
+        password,
+        user.password
+      );
+
+    } else {
+
+      // Old plain-text password
+      isMatch = user.password === password;
+
+      // Automatically convert to bcrypt hash
+      if (isMatch) {
+
+        user.password = await bcrypt.hash(password, 10);
+
+        await user.save();
+
+        console.log("Password migrated:", user.email);
+
+      }
 
     }
 
+    if (!isMatch) {
+      return res.json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d"
+      }
+    );
+
     res.json({
       success: true,
-      message: "Login successful",
+      token,
       user: {
+        id: user._id,
         name: user.name,
         email: user.email,
         role: user.role
       }
     });
 
-  } else {
-    res.json({
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({
       success: false,
-      message: "Invalid credentials"
+      message: "Server Error"
     });
+
   }
+
 });
 
 /* Admin Login */
@@ -210,25 +265,94 @@ app.post("/admin-login", async (req, res) => {
     const email = req.body.email.trim();
     const password = req.body.password.trim();
 
+    // Find admin by email
     const admin = await User.findOne({ email });
 
-    if (admin && admin.password === password && admin.role === "admin") {
-      res.json({
-        success: true,
-        user: admin
-      });
-    } else {
-      res.json({
+    if (!admin) {
+      return res.json({
         success: false,
         message: "Invalid credentials"
       });
     }
 
+    // Check role
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Admin access denied"
+      });
+    }
+
+    let isMatch = false;
+
+    // If password is already hashed
+    if (admin.password.startsWith("$2")) {
+
+      isMatch = await bcrypt.compare(
+        password,
+        admin.password
+      );
+
+    } else {
+
+      // Old plain-text password
+      isMatch = admin.password === password;
+
+      // Automatically convert to bcrypt hash
+      if (isMatch) {
+
+        admin.password = await bcrypt.hash(password, 10);
+
+        await admin.save();
+
+        console.log(`✅ Admin password migrated: ${admin.email}`);
+
+      }
+
+    }
+
+    if (!isMatch) {
+      return res.json({
+        success: false,
+        message: "Invalid credentials"
+      });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      {
+        id: admin._id,
+        role: admin.role
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d"
+      }
+    );
+
+    // Success response
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role
+      }
+    });
+
   } catch (err) {
-    res.json({ success: false });
+
+    console.log(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error"
+    });
+
   }
 });
-
 /* Razorpay Order */
 app.post("/create-order", async (req, res) => {
   try {
@@ -1374,4 +1498,7 @@ app.get("/top-products", async (req, res) => {
 /* Start */
 server.listen(PORT, () => {
   console.log("Server running ");
+});
+app.get("/test", (req, res) => {
+  res.send("Backend Updated Successfully");
 });

@@ -100,11 +100,8 @@ function Login() {
 
         try {
 
-            const res = await axios.post(
-
-                `${import.meta.env.VITE_BACKEND_URL}/login`,
-                loginData
-            ); console.log(res.data);
+            const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/login`, loginData);
+            console.log(res.data);
 
             if (!res.data.success) {
 
@@ -136,9 +133,13 @@ function Login() {
             }
 
             // SUCCESS USER LOGIN
+
+            localStorage.setItem("token", res.data.token);
+
             localStorage.setItem(
                 "jwello_user",
                 JSON.stringify({
+                    id: res.data.user.id,
                     name: res.data.user.name,
                     email: res.data.user.email,
                     role: res.data.user.role

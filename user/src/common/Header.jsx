@@ -18,6 +18,16 @@ function Header() {
         setShowMobileMenu(false);
         navigate("/login");
     };
+    const handleCartClick = (e) => {
+        const currentUser = JSON.parse(localStorage.getItem("jwello_user"));
+
+        if (!currentUser) {
+            e.preventDefault();
+            alert("Login required");
+            navigate("/login", { replace: true });
+            return;
+        }
+    };
 
     /* Cart Count */
     useEffect(() => {
@@ -150,14 +160,13 @@ function Header() {
                             <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
                         </svg>
                     </Link>)}
-
-                <Link to="/wishlist" className="icon-btn" title="Wishlist">
+                <Link to="/wishlist" className="icon-btn" title="Wishlist" onClick={handleCartClick}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                 </Link>
 
-                <Link to="/cart" className="icon-btn cart-icon" title="Cart">
+                <Link to="/cart" className="icon-btn cart-icon" title="Cart" onClick={handleCartClick}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                         <line x1="3" y1="6" x2="21" y2="6" />

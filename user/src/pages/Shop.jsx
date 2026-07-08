@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import Header from '../common/Header'
-import { useLocation, Link } from 'react-router-dom'
+import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHeart as solidHeart } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as regularHeart } from "@fortawesome/free-regular-svg-icons";
@@ -8,10 +8,12 @@ import toast from "react-hot-toast";
 import Footer from '../common/Footer';
 function Shop() {
     const location = useLocation();
+    const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("jwello_user"));
     const [wishlistIds, setWishlistIds] = useState([]);
     const [category, setCategory] = useState("");
     const [previewImage, setPreviewImage] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const query = new URLSearchParams(location.search);
@@ -19,10 +21,17 @@ function Shop() {
     }, [location]);
 
     useEffect(() => {
-        const wishlist = JSON.parse(localStorage.getItem(`jwello_wishlist_${user.email}`)) || [];
+
+        if (!user) {
+            setWishlistIds([]);
+            return;
+        }
+
+        const wishlist =
+            JSON.parse(localStorage.getItem(`jwello_wishlist_${user.email}`)) || [];
+
         setWishlistIds(wishlist.map(item => item._id));
     }, []);
-
     const [products, setProducts] = useState([])
     const [search, setSearch] = useState("");
     const [metal, setMetal] = useState("all");
@@ -49,10 +58,17 @@ function Shop() {
     }, [products, category, search, metal, sort]);
 
     const handleAddToCart = (product) => {
+
         const user = JSON.parse(localStorage.getItem("jwello_user"));
 
         if (!user) {
+            console.log("User:", user);
             toast.error("Please login first");
+
+            setTimeout(() => {
+                navigate("/login");
+            }, 1000);
+
             return;
         }
 
@@ -61,52 +77,93 @@ function Shop() {
         let cart = JSON.parse(localStorage.getItem(cartKey)) || [];
 
         const exists = cart.find(item => item._id === product._id);
+
         if (exists) {
 
             toast("Item already in cart");
 
             return;
 
-        } else {
-            cart.push({
-                _id: product._id,
-                name: product.name,
-                price: product.price,
-                oldPrice: product.oldPrice,
-                images: product.images,
-                category: product.category,
-                badge: product.badge,
-                qty: 1
-            });
-
-            localStorage.setItem(cartKey, JSON.stringify(cart));
         }
+
+        cart.push({
+            _id: product._id,
+            name: product.name,
+            price: product.price,
+            oldPrice: product.oldPrice,
+            images: product.images,
+            category: product.category,
+            badge: product.badge,
+            qty: 1
+        });
+
+        localStorage.setItem(cartKey, JSON.stringify(cart));
 
         window.dispatchEvent(new Event("cartUpdated"));
 
         toast.success("Product added to cart");
+
     };
     const handleAddToWishlist = (product) => {
-        let wishlist = JSON.parse(localStorage.getItem(`jwello_wishlist_${user.email}`)) || [];
+
+        const user = JSON.parse(localStorage.getItem("jwello_user"));
+
+        if (!user) {
+
+            toast.error("Please login first");
+
+            setTimeout(() => {
+                navigate("/login");
+            }, 1000);
+
+            return;
+        }
+
+        let wishlist =
+            JSON.parse(localStorage.getItem(`jwello_wishlist_${user.email}`)) || [];
 
         const exists = wishlist.find(item => item._id === product._id);
 
         if (exists) {
+
             wishlist = wishlist.filter(item => item._id !== product._id);
+
+            toast.success("Removed from wishlist");
+
         } else {
+
             wishlist.push(product);
+
+            toast.success("Added to wishlist");
+
         }
 
-        localStorage.setItem(`jwello_wishlist_${user.email}`, JSON.stringify(wishlist));
+        localStorage.setItem(
+            `jwello_wishlist_${user.email}`,
+            JSON.stringify(wishlist)
+        );
 
         setWishlistIds(wishlist.map(item => item._id));
+
     };
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/products`)
-            .then(res => res.json())
-            .then(data => setProducts(data))
-    }, [])
 
+        setLoading(true);
+
+        setTimeout(() => {
+
+            fetch(`${import.meta.env.VITE_BACKEND_URL}/products`)
+                .then(res => res.json())
+                .then(data => {
+                    setProducts(data);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+
+        }, 3000);
+
+    }, []);
     return (
         <div>
             <Header key={location.pathname + location.search} />
@@ -132,7 +189,6 @@ function Shop() {
                                             const value = e.target.value;
                                             setSearch(value);
                                             if (value.trim() === "") { setSuggestions([]); } else {
-
                                                 const matched = products.filter(item => item.name.toLowerCase()
                                                     .includes(value.toLowerCase()));
                                                 setSuggestions(matched.slice(0, 5));
@@ -156,11 +212,8 @@ function Shop() {
                                 <select value={metal} onChange={(e) => setMetal(e.target.value)}>
 
                                     <option value="all">All Metals</option>
-
                                     <option value="gold">Gold</option>
-
                                     <option value="silver">Silver</option>
-
                                     <option value="diamond">Diamond</option>
                                 </select>
                                 <select value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -168,16 +221,11 @@ function Shop() {
                                     <option value="low-high">Price Low to High</option>
                                     <option value="high-low">Price High to Low</option>
                                 </select>
-                                <button
-                                    className="reset-filters-btn"
-                                    onClick={() => {
-
-                                        setSearch("");
-                                        setMetal("all");
-                                        setSort("");
-
-                                    }}
-                                >
+                                <button className="reset-filters-btn" onClick={() => {
+                                    setSearch("");
+                                    setMetal("all");
+                                    setSort("Sort By");
+                                }}>
 
                                     Reset Filters
 
@@ -186,75 +234,84 @@ function Shop() {
 
                             </div>
                             <div className="product-grid">
-                                {filteredProducts.map((item) => (
-                                    <Link to={`/products/${item._id}`} className="product-link" key={item._id}>
-                                        <div className="product-card reveal visible">
-                                            <div className="product-img">
-                                                <img src={`${import.meta.env.VITE_BACKEND_URL}${item.images?.[0]}`} alt={item.name} />
 
-                                                <div className="product-actions">
-                                                    <button className={`action-btn wishlist-btn 
+                                {
+                                    loading ? (
+
+                                        [...Array(8)].map((_, index) => (
+                                            <div className="product-card skeleton-card" key={index}>
+                                                <div className="skeleton-image"></div>
+
+                                                <div className="product-info">
+                                                    <div className="skeleton skeleton-category"></div>
+                                                    <div className="skeleton skeleton-title"></div>
+                                                    <div className="skeleton skeleton-price"></div>
+                                                    <div className="skeleton skeleton-button"></div>
+                                                </div>
+                                            </div>
+                                        ))
+
+                                    ) : (filteredProducts.map(
+                                        (item) => (
+                                            <Link to={`/products/${item._id}`} className="product-link" key={item._id}>
+                                                <div className="product-card reveal visible">
+                                                    <div className="product-img">
+                                                        <img src={`${import.meta.env.VITE_BACKEND_URL}${item.images?.[0]}`} alt={item.name} />
+
+                                                        <div className="product-actions">
+                                                            <button className={`action-btn wishlist-btn 
                                                     ${wishlistIds.includes(item._id) ? "active" : ""}`}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            handleAddToWishlist(item);
-                                                        }}>
-                                                        <FontAwesomeIcon icon={wishlistIds.includes(item._id) ? solidHeart : regularHeart}
-                                                        />
-                                                    </button>
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    handleAddToWishlist(item);
+                                                                }}>
+                                                                <FontAwesomeIcon icon={wishlistIds.includes(item._id) ? solidHeart : regularHeart}
+                                                                />
+                                                            </button>
 
-                                                    <button className="quick-view-btn" onClick={(e) => {
-                                                        e.preventDefault();
-                                                        setPreviewImage(`${import.meta.env.VITE_BACKEND_URL}${item.images?.[0]}`);
-                                                    }}>
-                                                        👁
-                                                    </button>
-                                                    {previewImage && (
-                                                        <div
-                                                            className="image-preview-overlay"
-                                                            onClick={() => setPreviewImage(null)}
-                                                        >
-                                                            <div
-                                                                className="image-preview-box"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                <button
-                                                                    className="close-preview"
-                                                                    onClick={() => setPreviewImage(null)}
-                                                                >
-                                                                    ✕
-                                                                </button>
-
-                                                                <img src={previewImage} alt="Preview" />
-                                                            </div>
+                                                            <button className="quick-view-btn" onClick={(e) => {
+                                                                e.preventDefault();
+                                                                setPreviewImage(`${import.meta.env.VITE_BACKEND_URL}${item.images?.[0]}`);
+                                                            }}>
+                                                                👁
+                                                            </button>
+                                                            {previewImage && (
+                                                                <div className="image-preview-overlay" onClick={() => setPreviewImage(null)}>
+                                                                    <div className="image-preview-box" onClick={(e) => e.stopPropagation()}>
+                                                                        <button className="close-preview" onClick={() => setPreviewImage(null)}>
+                                                                            ✕
+                                                                        </button>
+                                                                        <img src={previewImage} alt="Preview" />
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
+
+                                                        {item.badge && (
+                                                            <div className="product-badge">{item.badge}</div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="product-info">
+                                                        <p className="product-category">{item.category}</p>
+                                                        <h3 className="product-name">{item.name}</h3>
+
+                                                        <div className="product-price">
+                                                            <span className="price-current">₹{item.price}</span>
+                                                            <span className="price-old">{item.oldPrice}</span>
+                                                        </div>
+
+                                                        <button className="add-to-cart" onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleAddToCart(item);
+                                                        }}>
+                                                            Add to Cart
+                                                        </button>
+                                                    </div>
                                                 </div>
-
-                                                {item.badge && (
-                                                    <div className="product-badge">{item.badge}</div>
-                                                )}
-                                            </div>
-
-                                            <div className="product-info">
-                                                <p className="product-category">{item.category}</p>
-                                                <h3 className="product-name">{item.name}</h3>
-
-                                                <div className="product-price">
-                                                    <span className="price-current">₹{item.price}</span>
-                                                    <span className="price-old">{item.oldPrice}</span>
-                                                </div>
-
-                                                <button className="add-to-cart" onClick={(e) => {
-                                                    e.preventDefault();
-                                                    handleAddToCart(item);
-                                                }}>
-                                                    Add to Cart
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
+                                            </Link>
+                                        )))
+                                }
                             </div>
                             <div className="shop-toolbar">
                                 <p className="result-count">
@@ -269,16 +326,9 @@ function Shop() {
             {previewImage && (
                 <div
                     className="image-preview-overlay"
-                    onClick={() => setPreviewImage(null)}
-                >
-                    <div
-                        className="image-preview-box"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            className="close-preview"
-                            onClick={() => setPreviewImage(null)}
-                        >
+                    onClick={() => setPreviewImage(null)}                >
+                    <div className="image-preview-box" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-preview" onClick={() => setPreviewImage(null)}>
                             ✕
                         </button>
 
